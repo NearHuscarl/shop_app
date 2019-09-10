@@ -35,17 +35,7 @@ class CartScreen extends StatelessWidget {
                     ),
                     backgroundColor: Theme.of(context).primaryColor,
                   ),
-                  FlatButton(
-                    child: Text('Order Now'),
-                    onPressed: () {
-                      Provider.of<Orders>(context, listen: false).addOrder(
-                        carts.items.values.toList(),
-                        carts.totalAmount,
-                      );
-                      carts.clear();
-                    },
-                    textColor: Theme.of(context).primaryColor,
-                  )
+                  OrderButton(carts),
                 ],
               ),
             ),
@@ -70,6 +60,57 @@ class CartScreen extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+class OrderButton extends StatefulWidget {
+  final Carts carts;
+
+  OrderButton(this.carts);
+
+  @override
+  _OrderButtonState createState() => _OrderButtonState();
+}
+
+class _OrderButtonState extends State<OrderButton> {
+  var _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FlatButton(
+      child: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Text('Order Now'),
+      onPressed: (widget.carts.items.length <= 0 || _isLoading)
+          ? null
+          : () async {
+              setState(() => _isLoading = true);
+              try {
+                await Provider.of<Orders>(context, listen: false).addOrder(
+                  widget.carts.items.values.toList(),
+                  widget.carts.totalAmount,
+                );
+                widget.carts.clear();
+                setState(() => _isLoading = false);
+              } catch (error) {
+                setState(() => _isLoading = false);
+                await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('An error occurred!'),
+                    content: Text('Could not add order.'),
+                    actions: [
+                      FlatButton(
+                        child: Text('Okay'),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+      textColor: Theme.of(context).primaryColor,
     );
   }
 }
