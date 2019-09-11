@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
+import '../constants.dart';
+import '../models/http_exception.dart';
 import 'carts.dart';
 
 class Order {
@@ -20,18 +22,20 @@ class Order {
 }
 
 class Orders with ChangeNotifier {
-  static const baseUrl = 'https://flutter-shop-app-e04cc.firebaseio.com';
   final uuid = Uuid();
   List<Order> _items = [];
+  final String authToken;
+  final String userId;
 
-  List<Order> get orders {
+  Orders(this.authToken, this.userId, this._items);
+
+  List<Order> get items {
     return [..._items];
   }
 
   Future<void> addOrder(List<Cart> products, double total) async {
-    const url = '$baseUrl/orders.json';
+    final url = '${Constants.DatabaseUrl}/orders/$userId.json?auth=$authToken';
     final timestamp = DateTime.now();
-
     final response = await http.post(
       url,
       body: json.encode({
@@ -48,6 +52,10 @@ class Orders with ChangeNotifier {
       }),
     );
 
+    if (response.statusCode >= 400) {
+      throw HttpException(json.decode(response.body)['error']);
+    }
+
     final order = Order(
       id: json.decode(response.body)['name'],
       amount: total,
@@ -59,7 +67,7 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> fetchOrders() async {
-    const url = '$baseUrl/orders.json';
+    final url = '${Constants.DatabaseUrl}/orders/$userId.json?auth=$authToken';
     final response = await http.get(url);
     final List<Order> loadedOrders = [];
     final extractedData = json.decode(response.body) as Map<String, dynamic>;

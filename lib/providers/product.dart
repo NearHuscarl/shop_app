@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../constants.dart';
 import '../models/http_exception.dart';
 
 class Product with ChangeNotifier {
-  static const baseUrl = 'https://flutter-shop-app-e04cc.firebaseio.com';
-
   final String id;
   final String title;
   final String description;
@@ -23,14 +22,13 @@ class Product with ChangeNotifier {
     this.isFavorite = false,
   });
 
-  Future<void> toggleFavorite() async {
-    final url = '$baseUrl/products/$id';
+  Future<void> toggleFavorite(String authToken, String userId) async {
+    final url =
+        '${Constants.DatabaseUrl}/userFavorites/$userId/$id.json?auth=$authToken';
     final newFavorite = !isFavorite;
-    final response = await http.patch(
+    final response = await http.put(
       url,
-      body: json.encode({
-        'isFavorite': newFavorite,
-      }),
+      body: json.encode(newFavorite),
     );
 
     if (response.statusCode >= 400) {
